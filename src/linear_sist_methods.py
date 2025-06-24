@@ -237,3 +237,71 @@ def separar_m_aumentada(Ab: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         logging.debug("Convirtiendo Ab a numpy array")
         Ab = np.array(Ab, dtype=float)
     return Ab[:, :-1], Ab[:, -1].reshape(-1, 1)
+
+
+# ####################################################################
+def gauss_jordan(Ab: np.ndarray) -> np.ndarray:
+    """Resuelve un sistema de ecuaciones lineales mediante el método de Gauss-Jordan.
+
+    ## Parameters
+
+    ``Ab``: matriz aumentada del sistema de ecuaciones lineales. Debe ser de tamaño n-by-(n+1), donde n es el número de incógnitas.
+
+    ## Return
+
+    ``solucion``: vector con la solución del sistema de ecuaciones lineales.
+
+    """
+    if not isinstance(Ab, np.ndarray):
+        logging.debug("Convirtiendo A a numpy array.")
+        Ab = np.array(Ab)
+    assert Ab.shape[0] == Ab.shape[1] - 1, "La matriz A debe ser de tamaño n-by-(n+1)."
+    n = Ab.shape[0]
+
+    for i in range(0, n):  # loop por columna
+
+        # --- encontrar pivote
+        p = None  # default, first element
+        for pi in range(i, n):
+            if Ab[pi, i] == 0:
+                # must be nonzero
+                continue
+
+            if p is None:
+                # first nonzero element
+                p = pi
+                continue
+
+            if abs(Ab[pi, i]) < abs(Ab[p, i]):
+                p = pi
+
+        if p is None:
+            # no pivot found.
+            raise ValueError("No existe solución única.")
+
+        if p != i:
+            # swap rows
+            logging.debug(f"Intercambiando filas {i} y {p}")
+            _aux = Ab[i, :].copy()
+            Ab[i, :] = Ab[p, :].copy()
+            Ab[p, :] = _aux
+
+        # --- Eliminación: loop por fila
+        for j in range(n):
+            if i == j:
+                continue
+            m = Ab[j, i] / Ab[i, i]
+            Ab[j, i:] = Ab[j, i:] - m * Ab[i, i:]
+
+        logging.info(f"\n{Ab}")
+
+    if Ab[n - 1, n - 1] == 0:
+        raise ValueError("No existe solución única.")
+
+    # --- Sustitución hacia atrás
+    solucion = np.zeros(n)
+
+    for i in range(n - 1, -1, -1):
+        solucion[i] = Ab[i, -1] / Ab[i, i]
+
+    return solucion
